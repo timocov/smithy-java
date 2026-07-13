@@ -235,8 +235,11 @@ final class HttpBindingDeserializer extends SpecificShapeDeserializer implements
             if (bb.remaining() > 0) {
                 structMemberConsumer.accept(state, member, payloadCodec.createDeserializer(bb));
             }
-        } else if (body != null && body.contentLength() > 0) {
-            structMemberConsumer.accept(state, member, new PayloadDeserializer(payloadCodec, body));
+        } else if (body != null) {
+            ByteBuffer bb = bodyAsByteBuffer();
+            if (bb.remaining() > 0) {
+                structMemberConsumer.accept(state, member, new PayloadDeserializer(payloadCodec, bb));
+            }
         }
     }
 

@@ -14,23 +14,18 @@ import software.amazon.smithy.java.core.schema.Schema;
 import software.amazon.smithy.java.core.serde.Codec;
 import software.amazon.smithy.java.core.serde.ShapeDeserializer;
 import software.amazon.smithy.java.core.serde.document.Document;
-import software.amazon.smithy.java.io.datastream.DataStream;
 
 final class PayloadDeserializer implements ShapeDeserializer {
     private final Codec payloadCodec;
-    private final DataStream body;
+    private final ByteBuffer bodyByteBuffer;
 
-    PayloadDeserializer(Codec payloadCodec, DataStream body) {
+    PayloadDeserializer(Codec payloadCodec, ByteBuffer bodyByteBuffer) {
         this.payloadCodec = payloadCodec;
-        this.body = body;
-    }
-
-    private ByteBuffer resolveBodyBytes() {
-        return body.asByteBuffer();
+        this.bodyByteBuffer = bodyByteBuffer;
     }
 
     private ShapeDeserializer createDeserializer() {
-        return payloadCodec.createDeserializer(resolveBodyBytes());
+        return payloadCodec.createDeserializer(bodyByteBuffer);
     }
 
     @Override
@@ -46,7 +41,7 @@ final class PayloadDeserializer implements ShapeDeserializer {
             return null;
         }
 
-        return resolveBodyBytes();
+        return bodyByteBuffer;
     }
 
     @Override
@@ -119,14 +114,13 @@ final class PayloadDeserializer implements ShapeDeserializer {
             return null;
         }
 
-        var buffer = body.asByteBuffer();
-        if (buffer.hasArray()) {
-            int pos = buffer.arrayOffset() + buffer.position();
-            int len = buffer.remaining();
-            return new String(buffer.array(), pos, len, StandardCharsets.UTF_8);
+        if (bodyByteBuffer.hasArray()) {
+            int pos = bodyByteBuffer.arrayOffset() + bodyByteBuffer.position();
+            int len = bodyByteBuffer.remaining();
+            return new String(bodyByteBuffer.array(), pos, len, StandardCharsets.UTF_8);
         }
 
-        return StandardCharsets.UTF_8.decode(buffer).toString();
+        return StandardCharsets.UTF_8.decode(bodyByteBuffer).toString();
     }
 
     @Override
@@ -180,6 +174,6 @@ final class PayloadDeserializer implements ShapeDeserializer {
 
     @Override
     public boolean isNull() {
-        return body == null;
+        return bodyByteBuffer == null;
     }
 }
